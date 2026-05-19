@@ -10,7 +10,6 @@
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/Account.php';
-require_once __DIR__ . '/../models/Role.php';
 
 echo "=== Tạo tài khoản quản trị viên ===\n\n";
 
@@ -35,7 +34,6 @@ try {
     }
 
     $accountModel = new Account();
-    $roleModel = new Role();
 
     // Dừng nếu email admin đã tồn tại
     $existing = $accountModel->findByEmail($email);
@@ -48,16 +46,10 @@ try {
 
     if (!$adminRole) {
         echo "Tạo vai trò quản trị viên...\n";
-        $permissions = json_encode([
-            'jobs-view', 'jobs-create', 'jobs-edit', 'jobs-delete',
-            'categories-view', 'categories-create', 'categories-edit', 'categories-delete',
-            'accounts-view', 'accounts-edit', 'accounts-delete',
-            'roles-view', 'roles-edit', 'roles-delete'
-        ]);
 
         Database::execute(
-            "INSERT INTO roles (title, description, permissions) VALUES (?, ?, ?)",
-            ['Admin', 'Toàn quyền quản trị', $permissions]
+            "INSERT INTO roles (title, description) VALUES (?, ?)",
+            ['Admin', 'Toàn quyền quản trị']
         );
         $roleId = Database::lastInsertId();
         echo "Đã tạo vai trò quản trị viên (ID: $roleId)\n";

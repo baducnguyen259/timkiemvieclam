@@ -277,9 +277,12 @@ class Database {
      */
     public static function tableExists($tableName) {
         try {
-            $sql = "SHOW TABLES LIKE ?";
-            $result = self::fetchOne($sql, [$tableName]);
-            return $result !== false;
+            $dbname = $_ENV['DB_NAME'] ?? 'job_portal';
+            $sql = "SELECT COUNT(*) AS total
+                    FROM information_schema.TABLES
+                    WHERE table_schema = ? AND table_name = ?";
+            $result = self::fetchOne($sql, [$dbname, $tableName]);
+            return $result !== false && (int)$result->total > 0;
         } catch (PDOException $e) {
             error_log("Lỗi kiểm tra bảng tồn tại: " . $e->getMessage());
             return false;

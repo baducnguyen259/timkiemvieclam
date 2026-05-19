@@ -33,13 +33,23 @@
 
       <div class="form-group">
         <label for="password">Mật khẩu <span class="required">*</span></label>
-        <input type="password" id="password" name="password" class="form-control" minlength="8" required>
+        <div class="password-field">
+          <input type="password" id="password" name="password" class="form-control" minlength="8" required>
+          <button type="button" class="password-toggle" data-password-toggle aria-label="Hiện mật khẩu" aria-pressed="false">
+            <i class="fa-solid fa-eye"></i>
+          </button>
+        </div>
         <small>Mật khẩu phải có ít nhất 8 ký tự</small>
       </div>
 
       <div class="form-group">
         <label for="confirmPassword">Xác nhận mật khẩu <span class="required">*</span></label>
-        <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" minlength="8" required>
+        <div class="password-field">
+          <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" minlength="8" required>
+          <button type="button" class="password-toggle" data-password-toggle aria-label="Hiện mật khẩu" aria-pressed="false">
+            <i class="fa-solid fa-eye"></i>
+          </button>
+        </div>
       </div>
 
       <div class="form-group policy-consent">

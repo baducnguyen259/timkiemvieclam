@@ -38,13 +38,6 @@
         </a>
       </li>
 
-      <li>
-        <a href="<?= BASE_PATH ?>/admin/role"
-          class="<?= strpos($_SERVER['REQUEST_URI'], '/admin/role') !== false ? 'active' : '' ?>">
-          <i class="fa-solid fa-shield-halved"></i>
-          Phân quyền
-        </a>
-      </li>
     </ul>
   </nav>
 </aside>

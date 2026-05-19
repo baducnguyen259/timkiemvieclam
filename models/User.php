@@ -9,7 +9,7 @@ require_once __DIR__ . '/../helpers/Generate.php';
 require_once __DIR__ . '/../helpers/Security.php';
 
 class User {
-    
+
     /**
      * Tạo ứng viên mới và trả về id kèm token đăng nhập raw cho cookie.
      */
@@ -58,6 +58,7 @@ class User {
     /**
      * Lấy ứng viên theo id nếu chưa bị xóa mềm.
      */
+
     public function findById($id) {
         $sql = "SELECT * FROM users WHERE id = ? AND deleted = 0 LIMIT 1";
         return Database::fetchOne($sql, [$id]);

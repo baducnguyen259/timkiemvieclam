@@ -17,7 +17,6 @@ require_once __DIR__ . '/../controllers/admin/AuthController.php';
 require_once __DIR__ . '/../controllers/admin/DashboardController.php';
 require_once __DIR__ . '/../controllers/admin/AccountController.php';
 require_once __DIR__ . '/../controllers/admin/JobCategoryController.php';
-require_once __DIR__ . '/../controllers/admin/RoleController.php';
 require_once __DIR__ . '/../controllers/employer/AuthController.php';
 require_once __DIR__ . '/../controllers/employer/DashboardController.php';
 require_once __DIR__ . '/../controllers/employer/JobController.php';
@@ -466,35 +465,6 @@ function route($uri, $method) {
     if (preg_match('#^/admin/account/delete/(\d+)$#', $uri, $matches) && $method === 'POST') {
         AdminAuthMiddleware::requireAuth();
         $controller = new AdminAccountController();
-        $controller->delete($matches[1]);
-        return;
-    }
-    
-    // Quản trị - Vai trò
-    if ($uri === '/admin/role' && $method === 'GET') {
-        AdminAuthMiddleware::requireAuth();
-        $controller = new AdminRoleController();
-        $controller->index();
-        return;
-    }
-    
-    if (preg_match('#^/admin/role/edit/(\d+)$#', $uri, $matches) && $method === 'GET') {
-        AdminAuthMiddleware::requireAuth();
-        $controller = new AdminRoleController();
-        $controller->edit($matches[1]);
-        return;
-    }
-    
-    if (preg_match('#^/admin/role/edit/(\d+)$#', $uri, $matches) && $method === 'POST') {
-        AdminAuthMiddleware::requireAuth();
-        $controller = new AdminRoleController();
-        $controller->editPost($matches[1]);
-        return;
-    }
-    
-    if (preg_match('#^/admin/role/delete/(\d+)$#', $uri, $matches) && $method === 'POST') {
-        AdminAuthMiddleware::requireAuth();
-        $controller = new AdminRoleController();
         $controller->delete($matches[1]);
         return;
     }

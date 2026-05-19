@@ -1,13 +1,19 @@
--- Thêm vai trò mặc định
-INSERT INTO roles (title, description, permissions, created_at, updated_at) VALUES
-('Admin', 'Full system access', 
- '["jobs-view","jobs-create","jobs-edit","jobs-delete","categories-view","categories-create","categories-edit","categories-delete","accounts-view","accounts-edit","accounts-delete","roles-view","roles-edit","roles-delete"]',
- NOW(), NOW()),
+-- Thêm vai trò mặc định nếu chưa tồn tại.
+-- File này an toàn khi chạy lại sau database/schema.sql.
+INSERT INTO roles (title, description, created_at, updated_at)
+SELECT 'Admin', 'Full system access', NOW(), NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM roles WHERE title = 'Admin' AND deleted = 0
+);
 
-('Employer', 'Can manage own jobs', 
- '["jobs-view","jobs-create","jobs-edit","jobs-delete"]',
- NOW(), NOW()),
+INSERT INTO roles (title, description, created_at, updated_at)
+SELECT 'Employer', 'Can manage own jobs', NOW(), NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM roles WHERE title = 'Employer' AND deleted = 0
+);
 
-('User', 'Basic user access', 
- '["jobs-view"]',
- NOW(), NOW());
+INSERT INTO roles (title, description, created_at, updated_at)
+SELECT 'User', 'Basic user access', NOW(), NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM roles WHERE title = 'User' AND deleted = 0
+);

@@ -70,6 +70,22 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
+  const passwordToggles = document.querySelectorAll("[data-password-toggle]");
+  passwordToggles.forEach((toggle) => {
+    toggle.addEventListener("click", () => {
+      const field = toggle.closest(".password-field")?.querySelector("input");
+      const icon = toggle.querySelector("i");
+      if (!field || !icon) return;
+
+      const isHidden = field.type === "password";
+      field.type = isHidden ? "text" : "password";
+      toggle.setAttribute("aria-label", isHidden ? "Ẩn mật khẩu" : "Hiện mật khẩu");
+      toggle.setAttribute("aria-pressed", String(isHidden));
+      icon.classList.toggle("fa-eye", !isHidden);
+      icon.classList.toggle("fa-eye-slash", isHidden);
+    });
+  });
+
   // Đổi trạng thái header khi người dùng cuộn trang.
   const header = document.getElementById("main-header");
   if (header) {

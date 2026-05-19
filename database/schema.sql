@@ -1,6 +1,8 @@
 -- Cơ sở dữ liệu
-CREATE DATABASE IF NOT EXISTS job_portal CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE job_portal;
+-- cPanel/phpMyAdmin: tạo database trong cPanel, chọn database đó rồi import file này.
+-- Local CLI: tạo và chọn database trước khi import, ví dụ:
+-- CREATE DATABASE IF NOT EXISTS job_portal CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- USE job_portal;
 
 -- Bảng: users (thay cho collection users)
 CREATE TABLE users (
@@ -64,7 +66,6 @@ CREATE TABLE roles (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(100) NOT NULL,
     description TEXT,
-    permissions JSON,
     deleted BOOLEAN DEFAULT FALSE,
     deleted_at DATETIME NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -208,7 +209,7 @@ CREATE TABLE forgot_password (
 ) ENGINE=InnoDB;
 
 -- Dữ liệu mặc định
-INSERT INTO roles (title, description, permissions) VALUES
-('Admin', 'Full access', '["jobs-view", "jobs-create", "jobs-edit", "jobs-delete", "users-view", "users-edit"]'),
-('Employer', 'Can manage own jobs', '["jobs-view", "jobs-create", "jobs-edit"]'),
-('User', 'Basic user', '["jobs-view"]');
+INSERT INTO roles (title, description) VALUES
+('Admin', 'Full access'),
+('Employer', 'Can manage own jobs'),
+('User', 'Basic user');

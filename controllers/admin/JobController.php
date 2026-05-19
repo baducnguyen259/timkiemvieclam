@@ -272,16 +272,4 @@ class AdminJobController {
         return trim($slug, '-');
     }
 
-    // Hàm hỗ trợ: kiểm tra quyền
-    /**
-     * Kiểm tra quyền hiện tại có chứa mã quyền được yêu cầu hay không.
-     */
-    private function hasPermission($permission) {
-        if (!isset($GLOBALS['current_role'])) {
-            return false;
-        }
-
-        $permissions = json_decode($GLOBALS['current_role']->permissions, true);
-        return in_array($permission, $permissions);
-    }
 }
