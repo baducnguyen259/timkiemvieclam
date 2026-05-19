@@ -1,0 +1,30 @@
+# Environment
+.env
+.env.local
+.env.production
+
+# Dependencies
+/vendor/
+/node_modules/
+
+# Uploads
+/public/uploads/*
+!/public/uploads/.gitkeep
+
+# Logs
+*.log
+/logs/
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cache
+/cache/
+/tmp/
+
