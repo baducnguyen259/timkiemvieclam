@@ -14,6 +14,8 @@ require_once __DIR__ . '/../../helpers/JobType.php';
 require_once __DIR__ . '/../../helpers/Redirect.php';
 
 class EmployerJobController {
+    private const LOGO_EXTENSIONS = ['jpg', 'jpeg', 'jfif', 'png', 'gif', 'webp', 'avif', 'bmp', 'ico'];
+
     private $jobModel;
     private $categoryModel;
 
@@ -50,9 +52,15 @@ class EmployerJobController {
             $location = $_GET['location'];
         }
 
+        // Fix #6: Validate sortKey/sortValue chống SQL injection
         $sort = ['created_at' => -1];
         if (isset($_GET['sortKey']) && isset($_GET['sortValue']) && $_GET['sortKey'] !== '') {
-            $sort = [$_GET['sortKey'] => $_GET['sortValue']];
+            $allowedSortKeys = ['id', 'title', 'company_name', 'location', 'salary_min', 'salary_max', 'status', 'position', 'created_at'];
+            $sortKey = $_GET['sortKey'];
+            $sortValue = strtoupper($_GET['sortValue'] ?? '');
+            if (in_array($sortKey, $allowedSortKeys, true)) {
+                $sort = [$sortKey => ($sortValue === 'ASC' ? 'ASC' : 'DESC')];
+            }
         }
 
         $countJobs = $this->jobModel->countDocuments($filters);
@@ -156,17 +164,7 @@ class EmployerJobController {
                 ? max(0, (float)$_POST['salary'])
                 : 0;
 
-            $companyLogo = null;
-            if (isset($_FILES['company_logo']) && $_FILES['company_logo']['error'] === UPLOAD_ERR_OK) {
-                if (!$this->isValidLogoExtension($_FILES['company_logo']['name'] ?? '')) {
-                    throw new Exception('Logo phải có định dạng JPG, JPEG hoặc PNG');
-                }
-                $uploader = new FileUpload(['jpg', 'jpeg', 'png']);
-                $uploadedLogoPath = $uploader->upload($_FILES['company_logo'], 'public/uploads/company-logo/');
-                $companyLogo = str_replace('public/', '', $uploadedLogoPath);
-            } elseif (isset($_FILES['company_logo']) && $_FILES['company_logo']['error'] !== UPLOAD_ERR_NO_FILE) {
-                throw new Exception('Tải logo lên thất bại');
-            }
+            $companyLogo = $this->uploadCompanyLogo();
 
             $data = [
                 'title' => $title,
@@ -197,7 +195,7 @@ class EmployerJobController {
             exit;
         } catch (Exception $e) {
             error_log($e->getMessage());
-            $_SESSION['flash_error'] = 'Có lỗi xảy ra khi đăng tin';
+            $_SESSION['flash_error'] = $this->formatSaveError($e, 'Có lỗi xảy ra khi đăng tin');
             header('Location: ' . BASE_PATH . '/employer/job/create');
             exit;
         }
@@ -289,17 +287,7 @@ class EmployerJobController {
         }
 
         try {
-            $companyLogo = $job->company_logo ?? null;
-            if (isset($_FILES['company_logo']) && $_FILES['company_logo']['error'] === UPLOAD_ERR_OK) {
-                if (!$this->isValidLogoExtension($_FILES['company_logo']['name'] ?? '')) {
-                    throw new Exception('Logo phải có định dạng JPG, JPEG hoặc PNG');
-                }
-                $uploader = new FileUpload(['jpg', 'jpeg', 'png']);
-                $uploadedLogoPath = $uploader->upload($_FILES['company_logo'], 'public/uploads/company-logo/');
-                $companyLogo = str_replace('public/', '', $uploadedLogoPath);
-            } elseif (isset($_FILES['company_logo']) && $_FILES['company_logo']['error'] !== UPLOAD_ERR_NO_FILE) {
-                throw new Exception('Tải logo lên thất bại');
-            }
+            $companyLogo = $this->uploadCompanyLogo($job->company_logo ?? null);
             $salaryValue = isset($_POST['salary']) && trim((string)$_POST['salary']) !== ''
                 ? max(0, (float)$_POST['salary'])
                 : 0;
@@ -332,7 +320,7 @@ class EmployerJobController {
             exit;
         } catch (Exception $e) {
             error_log($e->getMessage());
-            $_SESSION['flash_error'] = 'Có lỗi xảy ra khi cập nhật tin';
+            $_SESSION['flash_error'] = $this->formatSaveError($e, 'Có lỗi xảy ra khi cập nhật tin');
             header('Location: ' . BASE_PATH . "/employer/job/edit/$id");
             exit;
         }
@@ -433,8 +421,48 @@ class EmployerJobController {
      * Kiểm tra phần mở rộng logo có nằm trong nhóm ảnh được phép.
      */
     private function isValidLogoExtension($fileName) {
-        $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-        return in_array($extension, ['jpg', 'jpeg', 'png'], true);
+        $extension = strtolower(trim(pathinfo($fileName, PATHINFO_EXTENSION)));
+        return in_array($extension, self::LOGO_EXTENSIONS, true);
+    }
+
+    /**
+     * Tải logo công ty lên và giữ logo cũ nếu người dùng không chọn file mới.
+     */
+    private function uploadCompanyLogo($currentLogo = null) {
+        if (!isset($_FILES['company_logo'])) {
+            return $currentLogo;
+        }
+
+        $file = $_FILES['company_logo'];
+        $error = (int)($file['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($error === UPLOAD_ERR_NO_FILE) {
+            return $currentLogo;
+        }
+
+        if ($error === UPLOAD_ERR_OK && !$this->isValidLogoExtension($file['name'] ?? '')) {
+            throw new RuntimeException('Logo tải lên không hợp lệ: Logo phải là ảnh JPG, JPEG, JFIF, PNG, GIF, WebP, AVIF, BMP hoặc ICO');
+        }
+
+        try {
+            $uploader = new FileUpload(self::LOGO_EXTENSIONS);
+            $uploadedLogoPath = $uploader->upload($file, 'public/uploads/company-logo/');
+        } catch (Exception $uploadException) {
+            throw new RuntimeException('Logo tải lên không hợp lệ: ' . $uploadException->getMessage(), 0, $uploadException);
+        }
+
+        return str_replace('public/', '', $uploadedLogoPath);
+    }
+
+    /**
+     * Chỉ hiển thị lại các lỗi upload đã được chuẩn hóa, tránh lộ lỗi SQL/nội bộ.
+     */
+    private function formatSaveError(Exception $e, $fallback) {
+        $message = trim($e->getMessage());
+        if (str_starts_with($message, 'Logo tải lên không hợp lệ:')) {
+            return $message;
+        }
+
+        return $fallback;
     }
 
     /**

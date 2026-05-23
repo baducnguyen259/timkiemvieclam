@@ -33,10 +33,16 @@ require_once __DIR__ . '/../middlewares/UserMiddleware.php';
  * Điều phối request theo URI và HTTP method, áp middleware phù hợp rồi gọi controller tương ứng.
  */
 function route($uri, $method) {
-    // Áp dụng middleware toàn cục cho mọi route
-    UserMiddleware::handle();
-    SaveJobMiddleware::handle();
-    CategoryMiddleware::handle();
+    // Fix #14: Chỉ chạy middleware client cho các route không phải admin/employer/api
+    $isAdminRoute = str_starts_with($uri, '/admin');
+    $isEmployerRoute = str_starts_with($uri, '/employer');
+    $isApiRoute = str_starts_with($uri, '/api');
+
+    if (!$isAdminRoute && !$isEmployerRoute && !$isApiRoute) {
+        UserMiddleware::handle();
+        SaveJobMiddleware::handle();
+        CategoryMiddleware::handle();
+    }
     
     // ==================== ROUTE NGƯỜI DÙNG ====================
     
@@ -206,7 +212,7 @@ function route($uri, $method) {
     }
 
     if ($uri === '/employer/auth/login' && $method === 'POST') {
-        $controller = new EmployerAuthController();
+        $controller = new UserController();
         $controller->loginPost();
         return;
     }
@@ -469,12 +475,20 @@ function route($uri, $method) {
         return;
     }
     
-    // Tuyến API
+    // Fix #15: Tuyến API — chỉ trả jobs active, giới hạn trường và phân trang
     if ($uri === '/api/jobs' && $method === 'GET') {
         $jobModel = new Job();
-        $jobs = $jobModel->find(['deleted' => false]);
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $limit = min(50, max(1, (int)($_GET['limit'] ?? 20)));
+        $skip = ($page - 1) * $limit;
+
+        $jobs = $jobModel->find(
+            ['deleted' => false, 'status' => 'active'],
+            ['limit' => $limit, 'skip' => $skip, 'sort' => ['created_at' => -1]]
+        );
+
         header('Content-Type: application/json');
-        echo json_encode($jobs);
+        echo json_encode(['data' => $jobs, 'page' => $page, 'limit' => $limit]);
         return;
     }
     

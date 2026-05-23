@@ -12,7 +12,7 @@
   </div>
 
   <form method="POST" action="<?= BASE_PATH ?>/employer/job/create" class="admin-form" enctype="multipart/form-data">
-      <?= csrf_field() ?>
+    <?= csrf_field() ?>
     <div class="form-row">
       <div class="form-group col-md-6">
         <label for="title">Tên công việc <span class="required">*</span></label>
@@ -50,7 +50,7 @@
       </div>
 
       <div class="form-group col-md-3">
-        <label for="position">Vị trí</label>
+        <label for="position">Số lượng</label>
         <input type="number" id="position" name="position" class="form-control" min="0">
       </div>
     </div>
@@ -63,8 +63,8 @@
 
     <div class="form-group">
       <label for="company_logo">Tải logo công ty lên</label>
-      <input type="file" id="company_logo" name="company_logo" class="form-control" accept=".jpg,.jpeg,.png">
-      <small>Định dạng: JPG, JPEG, PNG. Tối đa 5MB.</small>
+      <input type="file" id="company_logo" name="company_logo" class="form-control" accept=".jpg,.jpeg,.jfif,.png,.gif,.webp,.avif,.bmp,.ico,image/*">
+      <small>Định dạng ảnh phổ biến: JPG, JPEG, JFIF, PNG, GIF, WebP, AVIF, BMP, ICO. Tối đa 5MB.</small>
     </div>
 
     <div class="form-group">

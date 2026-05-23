@@ -57,10 +57,10 @@ class AdminJobCategoryController {
             $slug = $this->generateSlug($_POST['title']);
             
             $data = [
-                'title' => htmlspecialchars(trim($_POST['title'])),
+                'title' => trim($_POST['title']),
                 'parent_id' => !empty($_POST['parent_id']) ? (int)$_POST['parent_id'] : null,
                 'thumbnail' => $_POST['thumbnail'] ?? null,
-                'description' => htmlspecialchars(trim($_POST['description'] ?? '')),
+                'description' => trim($_POST['description'] ?? ''),
                 'status' => $_POST['status'] ?? 'active',
                 'slug' => $slug,
                 'position' => (int)($_POST['position'] ?? 0)
@@ -132,10 +132,10 @@ class AdminJobCategoryController {
         
         try {
             $data = [
-                'title' => htmlspecialchars(trim($_POST['title'])),
+                'title' => trim($_POST['title']),
                 'parent_id' => !empty($_POST['parent_id']) ? (int)$_POST['parent_id'] : null,
                 'thumbnail' => $_POST['thumbnail'] ?? null,
-                'description' => htmlspecialchars(trim($_POST['description'] ?? '')),
+                'description' => trim($_POST['description'] ?? ''),
                 'status' => $_POST['status'] ?? 'active',
                 'position' => (int)($_POST['position'] ?? 0)
             ];
@@ -156,12 +156,18 @@ class AdminJobCategoryController {
     
     // Tuyến POST: /admin/job-category/delete/:id
     /**
-     * Xóa mềm danh mục việc làm theo id.
+     * Fix #7: Xóa mềm danh mục việc làm — dùng model delete() thay vì SQL trực tiếp.
      */
     public function delete($id) {
+        $category = $this->categoryModel->findOne(['id' => $id, 'deleted' => false]);
+        if (!$category) {
+            $_SESSION['flash_error'] = 'Danh mục không tồn tại';
+            header('Location: ' . BASE_PATH . '/admin/job-category');
+            exit;
+        }
+
         try {
-            $this->categoryModel->update($id, ['deleted' => true]);
-            Database::execute("UPDATE job_categories SET deleted = 1, deleted_at = NOW() WHERE id = ?", [$id]);
+            $this->categoryModel->delete($id);
             $_SESSION['flash_success'] = 'Xóa danh mục thành công!';
         } catch (Exception $e) {
             error_log($e->getMessage());

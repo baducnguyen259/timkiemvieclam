@@ -120,6 +120,9 @@ class UserController {
         }
         
         if (!empty($errors)) {
+        }
+        
+        if (!empty($errors)) {
             $_SESSION['flash_error'] = implode(', ', $errors);
             header('Location: ' . BASE_PATH . '/user/register');
             exit;
@@ -135,7 +138,7 @@ class UserController {
         }
         
         try {
-            $fullName = htmlspecialchars(trim($_POST['fullName']));
+            $fullName = trim($_POST['fullName']);
             $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
             $hashedPassword = password_hash($_POST['password'], PASSWORD_BCRYPT, ['cost' => 12]);
 
@@ -274,10 +277,13 @@ class UserController {
                 header('Location: ' . BASE_PATH . '/user/login');
                 exit;
             }
+            // Fix #11: Account tồn tại nhưng sai mật khẩu → trả lỗi ngay, không rơi xuống kiểm tra $user
+            $_SESSION['flash_error'] = 'Mật khẩu không đúng';
+            header('Location: ' . BASE_PATH . '/user/login');
+            exit;
         }
 
-        $user = $this->userModel->findByEmail($email);
-        
+        // Fix #10: Bỏ truy vấn $user thừa — đã lấy ở trên rồi
         if (!$account && !$user) {
             $_SESSION['flash_error'] = 'Email không tồn tại';
             header('Location: ' . BASE_PATH . '/user/login');

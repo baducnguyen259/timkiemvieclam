@@ -5,6 +5,7 @@
  * - Điều phối dữ liệu đầu vào, luật nghiệp vụ và phản hồi giao diện cho người dùng.
  */
 require_once __DIR__ . '/../../models/Job.php';
+require_once __DIR__ . '/../../helpers/Pagination.php';
 require_once __DIR__ . '/../../helpers/JobType.php';
 
 class HomeController {
@@ -32,12 +33,16 @@ class HomeController {
         ]);
         
         // Việc mới
-        $jobsNew = $this->jobModel->find([
+        $jobsNewFilters = [
             'deleted' => false,
             'status' => 'active'
-        ], [
+        ];
+        $countJobsNew = $this->jobModel->countDocuments($jobsNewFilters);
+        $jobsNewPagination = Pagination::calculate(6, $_GET['page'] ?? 1, $countJobsNew);
+        $jobsNew = $this->jobModel->find($jobsNewFilters, [
             'sort' => ['created_at' => -1],
-            'limit' => 6
+            'limit' => $jobsNewPagination['limitItem'],
+            'skip' => $jobsNewPagination['skipItem']
         ]);
         
         $title = "Trang Chủ";

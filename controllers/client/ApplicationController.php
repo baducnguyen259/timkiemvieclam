@@ -127,12 +127,12 @@ class ApplicationController {
             $data = [
                 'job_id' => $jobId,
                 'user_id' => $userId,
-                'full_name' => htmlspecialchars(trim($_POST['fullName'])),
+                'full_name' => trim($_POST['fullName']),
                 'email' => filter_var($_POST['email'], FILTER_SANITIZE_EMAIL),
-                'phone' => htmlspecialchars(trim($_POST['phone'])),
+                'phone' => trim($_POST['phone']),
                 'cv_file' => $cvFile,
                 'cv_link' => $cvLink !== '' ? $cvLink : null,
-                'cover_letter' => htmlspecialchars(trim($_POST['coverLetter'] ?? '')),
+                'cover_letter' => trim($_POST['coverLetter'] ?? ''),
                 'status' => 'pending'
             ];
             

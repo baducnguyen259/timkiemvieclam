@@ -111,3 +111,40 @@ run_test('anonymous saved jobs merge into the signed-in user bucket', function (
         }
     }
 });
+
+run_test('job creation stores blank optional selects as null', function (): void {
+    Database::beginTransaction();
+
+    try {
+        $jobModel = new Job();
+        $slug = 'blank-optional-job-' . bin2hex(random_bytes(4));
+
+        $jobId = $jobModel->create([
+            'title' => 'Blank Optional Job',
+            'company_name' => 'Optional Co',
+            'description' => 'Test blank optional fields',
+            'location' => 'TP.HCM',
+            'address_detail' => '123 Test Street',
+            'category_id' => '',
+            'salary_min' => 0,
+            'salary_max' => 0,
+            'type' => '',
+            'experience' => '',
+            'application_deadline' => '2026-12-31',
+            'status' => 'active',
+            'slug' => $slug,
+            'position' => 1,
+            'skills' => []
+        ]);
+
+        $stored = Database::fetchOne('SELECT category_id, type, experience FROM jobs WHERE id = ?', [$jobId]);
+
+        assert_same(null, $stored->category_id, 'Blank category_id should be stored as NULL');
+        assert_same(null, $stored->type, 'Blank job type should be stored as NULL');
+        assert_same(null, $stored->experience, 'Blank experience should be stored as NULL');
+    } finally {
+        if (Database::inTransaction()) {
+            Database::rollback();
+        }
+    }
+});

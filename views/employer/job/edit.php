@@ -69,7 +69,7 @@
 
     <div class="form-group">
       <label for="company_logo">Tải logo công ty lên</label>
-      <input type="file" id="company_logo" name="company_logo" class="form-control" accept=".jpg,.jpeg,.png">
+      <input type="file" id="company_logo" name="company_logo" class="form-control" accept=".jpg,.jpeg,.jfif,.png,.gif,.webp,.avif,.bmp,.ico,image/*">
       <?php if (!empty($job->company_logo)): ?>
       <div style="margin-top:8px;">
         <img src="<?= BASE_PATH . '/' . htmlspecialchars($job->company_logo) ?>" alt="Logo công ty" style="max-height:60px;">

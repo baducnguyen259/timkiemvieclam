@@ -33,13 +33,20 @@ class FileUpload {
             throw new Exception('Kích thước tệp vượt quá giới hạn');
         }
         
-        // Kiểm tra phần mở rộng file
-        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $extension = strtolower(trim(pathinfo($file['name'], PATHINFO_EXTENSION)));
         if (!in_array($extension, $this->allowedExtensions, true)) {
-            throw new Exception('Loại tệp không hợp lệ');
+            $detectedImageExtension = $this->detectAllowedImageExtension($file['tmp_name']);
+            if ($detectedImageExtension === null) {
+                throw new Exception('Loại tệp không hợp lệ');
+            }
+
+            $extension = $detectedImageExtension;
         }
 
-        $this->validateMimeType($file['tmp_name'], $extension);
+        $validatedExtension = $this->validateMimeType($file['tmp_name'], $extension);
+        if (is_string($validatedExtension) && $validatedExtension !== '') {
+            $extension = $validatedExtension;
+        }
         
         // Tạo tên file duy nhất để tránh trùng
         $filename = bin2hex(random_bytes(8)) . '_' . time() . '.' . $extension;
@@ -72,7 +79,7 @@ class FileUpload {
     private function extensionsFromEnv() {
         $configured = trim((string)($_ENV['ALLOWED_EXTENSIONS'] ?? ''));
         if ($configured === '') {
-            return ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'];
+            return ['jpg', 'jpeg', 'jfif', 'png', 'gif', 'webp', 'avif', 'bmp', 'ico', 'pdf', 'doc', 'docx'];
         }
 
         return array_filter(array_map('trim', explode(',', $configured)));
@@ -91,9 +98,15 @@ class FileUpload {
 
     private function defaultMimeTypes() {
         return [
-            'jpg' => ['image/jpeg', 'image/pjpeg'],
-            'jpeg' => ['image/jpeg', 'image/pjpeg'],
+            'jpg' => ['image/jpeg', 'image/pjpeg', 'image/jpg'],
+            'jpeg' => ['image/jpeg', 'image/pjpeg', 'image/jpg'],
+            'jfif' => ['image/jpeg', 'image/pjpeg', 'image/jpg'],
             'png' => ['image/png'],
+            'gif' => ['image/gif'],
+            'webp' => ['image/webp'],
+            'avif' => ['image/avif'],
+            'bmp' => ['image/bmp', 'image/x-ms-bmp'],
+            'ico' => ['image/vnd.microsoft.icon', 'image/x-icon'],
             'pdf' => ['application/pdf'],
             'doc' => ['application/msword', 'application/octet-stream'],
             'docx' => [
@@ -105,6 +118,10 @@ class FileUpload {
     }
 
     private function validateMimeType($tmpPath, $extension) {
+        if ($this->isImageExtension($extension)) {
+            return $this->validateImageType($tmpPath);
+        }
+
         if (!function_exists('finfo_open')) {
             return;
         }
@@ -125,6 +142,110 @@ class FileUpload {
         if (!is_string($mimeType) || !in_array($mimeType, $allowedMimeTypes, true)) {
             throw new Exception('Nội dung tệp không khớp định dạng cho phép');
         }
+
+        return $extension;
+    }
+
+    private function isImageExtension($extension) {
+        return in_array($extension, $this->imageExtensions(), true);
+    }
+
+    private function imageExtensions() {
+        return ['jpg', 'jpeg', 'jfif', 'png', 'gif', 'webp', 'avif', 'bmp', 'ico'];
+    }
+
+    private function validateImageType($tmpPath) {
+        $detectedExtension = $this->detectAllowedImageExtension($tmpPath);
+        if ($detectedExtension !== null) {
+            return $detectedExtension;
+        }
+
+        throw new Exception('Nội dung tệp không khớp định dạng cho phép');
+    }
+
+    private function detectAllowedImageExtension($tmpPath) {
+        if (empty(array_intersect($this->allowedExtensions, $this->imageExtensions()))) {
+            return null;
+        }
+
+        $detectedExtension = $this->detectImageExtension($tmpPath);
+        if ($detectedExtension === null || !in_array($detectedExtension, $this->allowedExtensions, true)) {
+            return null;
+        }
+
+        return $detectedExtension;
+    }
+
+    private function detectImageExtension($tmpPath) {
+        $typeMap = [];
+        $knownTypes = [
+            'IMAGETYPE_JPEG' => 'jpg',
+            'IMAGETYPE_PNG' => 'png',
+            'IMAGETYPE_GIF' => 'gif',
+            'IMAGETYPE_BMP' => 'bmp',
+            'IMAGETYPE_ICO' => 'ico',
+            'IMAGETYPE_WEBP' => 'webp',
+            'IMAGETYPE_AVIF' => 'avif',
+        ];
+
+        foreach ($knownTypes as $constantName => $extension) {
+            if (defined($constantName)) {
+                $typeMap[constant($constantName)] = $extension;
+            }
+        }
+
+        if (function_exists('exif_imagetype')) {
+            $imageType = @exif_imagetype($tmpPath);
+            if ($imageType !== false && isset($typeMap[(int)$imageType])) {
+                return $typeMap[(int)$imageType];
+            }
+        }
+
+        if (function_exists('getimagesize')) {
+            $imageInfo = @getimagesize($tmpPath);
+            if (is_array($imageInfo) && isset($imageInfo[2]) && isset($typeMap[(int)$imageInfo[2]])) {
+                return $typeMap[(int)$imageInfo[2]];
+            }
+        }
+
+        return $this->detectImageExtensionFromSignature($tmpPath);
+    }
+
+    private function detectImageExtensionFromSignature($tmpPath) {
+        $bytes = @file_get_contents($tmpPath, false, null, 0, 12);
+        if (!is_string($bytes) || strlen($bytes) < 4) {
+            return null;
+        }
+
+        if (substr($bytes, 0, 3) === "\xFF\xD8\xFF") {
+            return 'jpg';
+        }
+
+        if (substr($bytes, 0, 8) === "\x89PNG\r\n\x1A\n") {
+            return 'png';
+        }
+
+        if (substr($bytes, 0, 6) === 'GIF87a' || substr($bytes, 0, 6) === 'GIF89a') {
+            return 'gif';
+        }
+
+        if (substr($bytes, 0, 4) === 'RIFF' && substr($bytes, 8, 4) === 'WEBP') {
+            return 'webp';
+        }
+
+        if (substr($bytes, 0, 2) === 'BM') {
+            return 'bmp';
+        }
+
+        if (substr($bytes, 0, 4) === "\x00\x00\x01\x00") {
+            return 'ico';
+        }
+
+        if (strlen($bytes) >= 12 && substr($bytes, 4, 4) === 'ftyp' && in_array(substr($bytes, 8, 4), ['avif', 'avis'], true)) {
+            return 'avif';
+        }
+
+        return null;
     }
 
     private function normalizeDestination($destination) {

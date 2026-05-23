@@ -64,10 +64,15 @@ class AdminJobController {
             $filters['created_by_account_id'] = $GLOBALS['current_user']->id;
         }
 
-        // Sắp xếp
-        $sort = ['position' => -1];
+        // Sắp xếp — Fix #5: Validate sortKey/sortValue chống SQL injection
+        $sort = ['created_at' => -1, 'id' => -1];
         if (isset($_GET['sortKey']) && isset($_GET['sortValue'])) {
-            $sort = [$_GET['sortKey'] => $_GET['sortValue']];
+            $allowedSortKeys = ['id', 'title', 'company_name', 'location', 'salary_min', 'salary_max', 'status', 'position', 'created_at'];
+            $sortKey = $_GET['sortKey'];
+            $sortValue = strtoupper($_GET['sortValue'] ?? '');
+            if (in_array($sortKey, $allowedSortKeys, true)) {
+                $sort = [$sortKey => ($sortValue === 'ASC' ? 'ASC' : 'DESC')];
+            }
         }
 
         // Phân trang
@@ -259,17 +264,6 @@ class AdminJobController {
 
         $title = 'Chi tiết: ' . $job->title;
         require_once __DIR__ . '/../../views/admin/job/detail.php';
-    }
-
-    // Hàm hỗ trợ: tạo slug
-    /**
-     * Tạo slug đơn giản từ tiêu đề tin tuyển dụng.
-     */
-    private function generateSlug($title) {
-        $slug = strtolower(trim($title));
-        $slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
-        $slug = preg_replace('/-+/', '-', $slug);
-        return trim($slug, '-');
     }
 
 }

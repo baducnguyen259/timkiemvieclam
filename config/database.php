@@ -259,6 +259,11 @@ class Database {
      */
     public static function getTableColumns($tableName) {
         try {
+            // Fix #2: Chống SQL injection bằng cách validate tên bảng
+            if (!preg_match('/^[a-zA-Z0-9_]+$/', $tableName)) {
+                error_log("Tên bảng không hợp lệ: " . $tableName);
+                return [];
+            }
             $sql = "SHOW COLUMNS FROM `$tableName`";
             $columns = self::fetchAll($sql);
             return array_map(function($col) {
@@ -320,6 +325,11 @@ class Database {
             
             foreach ($tables as $table) {
                 $tableName = $table->table_name;
+                // Fix #3: Validate tên bảng trước khi nội suy vào SQL
+                if (!preg_match('/^[a-zA-Z0-9_]+$/', $tableName)) {
+                    error_log("Bỏ qua bảng có tên không hợp lệ: " . $tableName);
+                    continue;
+                }
                 self::query("OPTIMIZE TABLE `$tableName`");
             }
             
@@ -335,18 +345,28 @@ class Database {
      * @param string $filepath Đường dẫn lưu file sao lưu
      * @return bool
      */
-    public static function backup($filepath) {
+    /**
+     * Fix #4: Đánh dấu private để tránh gọi từ bên ngoài; validate filepath.
+     */
+    private static function backup($filepath) {
         try {
+            // Validate filepath: chỉ cho phép ghi vào thư mục an toàn
+            $filepath = trim((string)$filepath);
+            if ($filepath === '' || !preg_match('/^[a-zA-Z0-9_\-\/\\.]+$/', $filepath)) {
+                error_log("Đường dẫn sao lưu không hợp lệ: " . $filepath);
+                return false;
+            }
+
             $host = $_ENV['DB_HOST'] ?? 'localhost';
             $dbname = $_ENV['DB_NAME'] ?? 'job_portal';
             $username = $_ENV['DB_USER'] ?? 'root';
             $password = $_ENV['DB_PASSWORD'] ?? '';
             
             $command = sprintf(
-                'mysqldump -h %s -u %s -p%s %s > %s',
+                'mysqldump -h %s -u %s %s %s > %s',
                 escapeshellarg($host),
                 escapeshellarg($username),
-                escapeshellarg($password),
+                $password !== '' ? '-p' . escapeshellarg($password) : '',
                 escapeshellarg($dbname),
                 escapeshellarg($filepath)
             );

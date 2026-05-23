@@ -91,7 +91,7 @@ $formatSalary = static function($salaryMin, $salaryMax) {
         <select name="sortKey" class="form-control">
           <option value="">Sắp xếp</option>
           <option value="position" <?= ($_GET['sortKey'] ?? '') === 'position' ? 'selected' : '' ?>>
-            Vị trí
+            Số lượng
           </option>
           <option value="created_at" <?= ($_GET['sortKey'] ?? '') === 'created_at' ? 'selected' : '' ?>>
             Ngày tạo

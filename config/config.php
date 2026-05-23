@@ -108,6 +108,10 @@ if (!defined('BASE_PATH')) {
 if (!defined('UPLOAD_PATH')) {
     define('UPLOAD_PATH', __DIR__ . '/../public/uploads/');
 }
+// Fix #29: Đảm bảo thư mục upload tồn tại
+if (!is_dir(UPLOAD_PATH)) {
+    @mkdir(UPLOAD_PATH, 0755, true);
+}
 
 $appTimezone = trim((string)($_ENV['APP_TIMEZONE'] ?? 'Asia/Ho_Chi_Minh'));
 if ($appTimezone !== '' && in_array($appTimezone, timezone_identifiers_list(), true)) {

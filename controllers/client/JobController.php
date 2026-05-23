@@ -210,7 +210,7 @@ class JobController {
 
         $allowedSortKeys = ['position', 'created_at', 'salary_min', 'salary_max'];
         if ($sortKey !== '' && in_array($sortKey, $allowedSortKeys, true)) {
-            $sort[$sortKey] = $sortValue === 'asc' ? 'ASC' : 'DESC';
+            $sort = [$sortKey => $sortValue === 'asc' ? 'ASC' : 'DESC'];
         }
 
         return $sort;

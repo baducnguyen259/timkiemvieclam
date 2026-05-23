@@ -10,7 +10,8 @@ require_once __DIR__ . '/../helpers/Security.php';
 
 class SaveJobMiddleware {
     /**
-     * Đảm bảo mỗi request có phiên lưu việc, đồng bộ danh sách ẩn danh với user khi đã đăng nhập.
+     * Đảm bảo mỗi request có phiên lưu việc (nếu có), đồng bộ danh sách ẩn danh với user khi đã đăng nhập.
+     * Fix #21: Không tự động tạo bản ghi mới trong DB cho khách vãng lai để tránh phình dữ liệu do bot/crawler.
      */
     public static function handle() {
         $savedJobModel = new SavedJob();
@@ -43,30 +44,42 @@ class SaveJobMiddleware {
                     $savedJobModel->updateUserId($cookieSavedJob->session_id, $currentUserId);
                     $savedJob = $savedJobModel->findById($cookieSavedJob->id);
                 }
+
+                // Nếu user đã đăng nhập nhưng vẫn chưa có phiên lưu việc, ta tự động tạo cho họ (hợp lệ vì là user thật)
+                if (!$savedJob) {
+                    $sessionId = Generate::randomString(32);
+                    $newSavedJobId = $savedJobModel->create($sessionId, $currentUserId);
+                    $savedJob = $savedJobModel->findById($newSavedJobId);
+                }
             } elseif ($cookieSavedJob && empty($cookieSavedJob->user_id)) {
                 $savedJob = $cookieSavedJob;
             }
 
-            if (!$savedJob) {
-                $sessionId = Generate::randomString(32);
-                $newSavedJobId = $savedJobModel->create($sessionId, $currentUserId);
-                $savedJob = $savedJobModel->findById($newSavedJobId);
+            // Fix #21: Nếu không có $savedJob (khách vãng lai chưa lưu việc bao giờ), ta KHÔNG tạo DB record.
+            if ($savedJob) {
+                if ($cookieSessionId !== $savedJob->session_id) {
+                    Security::setCookie('saveJobId', $savedJob->session_id, Security::persistentCookieExpiresAt());
+                }
+                $GLOBALS['current_saved_job'] = $savedJob;
+                $GLOBALS['miniSavedJobs'] = $savedJob;
+            } else {
+                $GLOBALS['current_saved_job'] = null;
+                $GLOBALS['miniSavedJobs'] = (object)[
+                    'id' => null,
+                    'session_id' => null,
+                    'total_saved_jobs' => 0,
+                    'job_ids' => []
+                ];
             }
-
-            if (!$savedJob) {
-                throw new Exception('Không thể xác định phiên lưu việc');
-            }
-
-            if ($cookieSessionId !== $savedJob->session_id) {
-                Security::setCookie('saveJobId', $savedJob->session_id, Security::persistentCookieExpiresAt());
-            }
-
-            $GLOBALS['current_saved_job'] = $savedJob;
-            $GLOBALS['miniSavedJobs'] = $savedJob;
         } catch (Exception $e) {
             error_log("Lỗi SaveJobMiddleware: " . $e->getMessage());
             $GLOBALS['current_saved_job'] = null;
-            $GLOBALS['miniSavedJobs'] = (object)['total_saved_jobs' => 0];
+            $GLOBALS['miniSavedJobs'] = (object)[
+                'id' => null,
+                'session_id' => null,
+                'total_saved_jobs' => 0,
+                'job_ids' => []
+            ];
         }
     }
 }

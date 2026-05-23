@@ -124,4 +124,12 @@ class JobCategory {
         
         return Database::execute($sql, $params);
     }
+
+    /**
+     * Fix #8: Xóa mềm danh mục việc làm.
+     */
+    public function delete($id) {
+        $sql = "UPDATE job_categories SET deleted = 1, deleted_at = NOW() WHERE id = ?";
+        return Database::execute($sql, [$id]);
+    }
 }

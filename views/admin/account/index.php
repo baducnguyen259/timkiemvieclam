@@ -19,7 +19,7 @@ $formatRole = static function($roleTitle) {
 <div class="admin-page account-management-page">
   <div class="account-summary-header">
     <h2>Quản lý người dùng</h2>
-    <p>Tổng: <span><?= (int)($totalAccounts ?? count($accounts ?? [])) ?></span></p>
+    <p>Tổng: <span><?= (int)$totalAccounts ?></span> tài khoản</p>
   </div>
 
   <?php if (!empty($accounts)): ?>
@@ -27,7 +27,7 @@ $formatRole = static function($roleTitle) {
     <table class="table account-management-table">
       <thead>
         <tr>
-          <th>ID</th>
+          <th>STT</th>
           <th>Họ tên</th>
           <th>Email</th>
           <th>Vai trò</th>
@@ -37,14 +37,14 @@ $formatRole = static function($roleTitle) {
         </tr>
       </thead>
       <tbody>
-        <?php foreach ($accounts as $account): ?>
+        <?php foreach ($accounts as $index => $account): ?>
         <?php
           $isActive = ($account->status ?? '') === 'active';
           $entityType = $account->entity_type ?? 'account';
           $isCurrentAccount = $entityType === 'account' && (int)$account->id === (int)($GLOBALS['current_user']->id ?? 0);
         ?>
         <tr>
-          <td><?= (int)$account->id ?></td>
+          <td><?= (int)$pagination['skipItem'] + $index + 1 ?></td>
           <td><?= htmlspecialchars($account->full_name ?? 'Chưa cập nhật') ?></td>
           <td><?= htmlspecialchars($account->email ?? 'Chưa cập nhật') ?></td>
           <td><?= htmlspecialchars($formatRole($account->role_title ?? '')) ?></td>
@@ -81,6 +81,25 @@ $formatRole = static function($roleTitle) {
       </tbody>
     </table>
   </div>
+
+  <?php if ($pagination['totalPage'] > 1): ?>
+  <div class="pagination">
+    <?php if ($pagination['page'] > 1): ?>
+    <a href="?page=<?= $pagination['page'] - 1 ?>" class="btn">« Trước</a>
+    <?php endif; ?>
+
+    <?php for ($i = 1; $i <= $pagination['totalPage']; $i++): ?>
+    <a href="?page=<?= $i ?>" class="btn <?= $i === $pagination['page'] ? 'active' : '' ?>">
+      <?= $i ?>
+    </a>
+    <?php endfor; ?>
+
+    <?php if ($pagination['page'] < $pagination['totalPage']): ?>
+    <a href="?page=<?= $pagination['page'] + 1 ?>" class="btn">Sau »</a>
+    <?php endif; ?>
+  </div>
+  <?php endif; ?>
+
   <?php else: ?>
   <div class="no-results">
     <p>Không có tài khoản nào.</p>

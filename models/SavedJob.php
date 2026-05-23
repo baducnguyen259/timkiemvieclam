@@ -88,13 +88,13 @@ class SavedJob {
     }
     
     /**
-     * Kiểm tra một việc làm đã nằm trong danh sách lưu hay chưa.
+     * Fix #13: Kiểm tra một việc làm đã nằm trong danh sách lưu hay chưa.
      */
     public function hasJob($savedJobId, $jobId) {
         $sql = "SELECT COUNT(*) as count FROM saved_job_items 
                 WHERE saved_job_id = ? AND job_id = ?";
         $result = Database::fetchOne($sql, [$savedJobId, $jobId]);
-        return $result->count > 0;
+        return $result && $result->count > 0;
     }
     
     /**
@@ -105,7 +105,6 @@ class SavedJob {
         return Database::execute($sql, [$userId, $sessionId]);
     }
     
-    // Gộp danh sách lưu ẩn danh vào danh sách lưu của người dùng
     /**
      * Gộp danh sách lưu ẩn danh vào danh sách lưu của người dùng đã đăng nhập.
      */

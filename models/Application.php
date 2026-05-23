@@ -216,6 +216,6 @@ class Application {
         $sql = "SELECT COUNT(*) as count FROM applications 
                 WHERE job_id = ? AND user_id = ? AND deleted = 0";
         $result = Database::fetchOne($sql, [$jobId, $userId]);
-        return $result->count > 0;
+        return $result && $result->count > 0;
     }
 }

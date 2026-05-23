@@ -8,12 +8,15 @@
 /node_modules/
 
 # Uploads
-/public/uploads/*
-!/public/uploads/.gitkeep
+/public/uploads/**
+!/public/uploads/
+!/public/uploads/**/
+!/public/uploads/**/.gitkeep
 
 # Logs
 *.log
-/logs/
+/logs/*
+!/logs/.gitkeep
 
 # IDE
 .vscode/

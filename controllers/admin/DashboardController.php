@@ -5,8 +5,6 @@
  * - Xử lý kiểm tra request, gọi model và hiển thị/chuyển hướng cho trang quản trị.
  */
 require_once __DIR__ . '/../../models/Job.php';
-require_once __DIR__ . '/../../models/User.php';
-require_once __DIR__ . '/../../models/Application.php';
 
 class AdminDashboardController {
     
@@ -15,9 +13,8 @@ class AdminDashboardController {
      */
     public function index() {
         $jobModel = new Job();
-        $userModel = new User();
-        $applicationModel = new Application();
         
+        // Fix #23: Xóa khởi tạo User và Application vì không sử dụng
         // Thống kê
         $totalJobs = $jobModel->countDocuments(['deleted' => false]);
         $activeJobs = $jobModel->countDocuments(['deleted' => false, 'status' => 'active']);

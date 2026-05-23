@@ -6,8 +6,10 @@ require_once __DIR__ . '/../helpers/Security.php';
 require_once __DIR__ . '/../helpers/Csrf.php';
 require_once __DIR__ . '/../helpers/PasswordResetSession.php';
 require_once __DIR__ . '/../helpers/Redirect.php';
+require_once __DIR__ . '/../helpers/FileUpload.php';
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../models/Account.php';
+require_once __DIR__ . '/../models/Job.php';
 require_once __DIR__ . '/../models/SavedJob.php';
 
 /**

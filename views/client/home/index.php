@@ -26,6 +26,12 @@ $buildAssetUrl = static function($path) {
   return BASE_PATH . '/uploads/' . ltrim($path, '/');
 };
 
+$buildNewJobsPageUrl = static function($page) {
+  $query = $_GET;
+  $query['page'] = $page;
+  return '?' . http_build_query($query) . '#new-jobs';
+};
+
 // Định dạng khoảng lương thành chuỗi hiển thị thân thiện cho thẻ việc làm.
 $formatSalary = static function($salaryMin, $salaryMax) {
   $salaryMin = (float)$salaryMin;
@@ -190,7 +196,7 @@ $formatSalary = static function($salaryMin, $salaryMax) {
 <?php endif; ?>
 
 <?php if (!empty($jobsNew)): ?>
-<section class="new-jobs">
+<section class="new-jobs" id="new-jobs">
   <div class="container">
     <div class="section-header">
       <h2><i class="fa-solid fa-clock"></i> Việc làm mới nhất</h2>
@@ -248,6 +254,24 @@ $formatSalary = static function($salaryMin, $salaryMax) {
       </div>
       <?php endforeach; ?>
     </div>
+
+    <?php if (($jobsNewPagination['totalPage'] ?? 0) > 1): ?>
+    <div class="pagination">
+      <?php if ($jobsNewPagination['page'] > 1): ?>
+      <a href="<?= $buildNewJobsPageUrl($jobsNewPagination['page'] - 1) ?>" class="btn">&laquo; Tr&#432;&#7899;c</a>
+      <?php endif; ?>
+
+      <?php for ($i = 1; $i <= $jobsNewPagination['totalPage']; $i++): ?>
+      <a href="<?= $buildNewJobsPageUrl($i) ?>" class="btn <?= $i === $jobsNewPagination['page'] ? 'active' : '' ?>">
+        <?= $i ?>
+      </a>
+      <?php endfor; ?>
+
+      <?php if ($jobsNewPagination['page'] < $jobsNewPagination['totalPage']): ?>
+      <a href="<?= $buildNewJobsPageUrl($jobsNewPagination['page'] + 1) ?>" class="btn">Sau &raquo;</a>
+      <?php endif; ?>
+    </div>
+    <?php endif; ?>
   </div>
 </section>
 <?php endif; ?>

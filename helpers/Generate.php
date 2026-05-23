@@ -6,10 +6,10 @@
  */
 class Generate {
     /**
-     * Tạo chuỗi ngẫu nhiên dạng hex để dùng cho token hoặc mã định danh nội bộ.
+     * Fix #16: Tạo chuỗi ngẫu nhiên dạng hex — hỗ trợ cả length lẻ.
      */
     public static function randomString($length = 20) {
-        return bin2hex(random_bytes($length / 2));
+        return substr(bin2hex(random_bytes((int)ceil($length / 2))), 0, $length);
     }
     
     /**

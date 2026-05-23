@@ -7,6 +7,35 @@
 require_once __DIR__ . '/../config/database.php';
 
 class Job {
+    private const JOB_TYPES = ['Full-time', 'Part-time', 'Contract', 'Internship'];
+
+    private function nullableString($value) {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string)$value);
+        return $value === '' ? null : $value;
+    }
+
+    private function nullablePositiveInt($value) {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string)$value);
+        if ($value === '' || !ctype_digit($value)) {
+            return null;
+        }
+
+        $intValue = (int)$value;
+        return $intValue > 0 ? $intValue : null;
+    }
+
+    private function nullableJobType($value) {
+        $value = $this->nullableString($value);
+        return in_array($value, self::JOB_TYPES, true) ? $value : null;
+    }
     
     // Lấy danh sách việc làm theo bộ lọc
     /**
@@ -206,21 +235,21 @@ class Job {
         
         $params = [
             $data['title'],
-            $data['company_name'] ?? null,
-            $data['company_logo'] ?? null,
-            $data['description'] ?? null,
-            $data['candidate_requirements'] ?? null,
-            $data['benefits'] ?? null,
-            $data['location'] ?? null,
-            $data['address_detail'] ?? null,
-            $data['category_id'] ?? null,
-            $data['thumbnail'] ?? null,
+            $this->nullableString($data['company_name'] ?? null),
+            $this->nullableString($data['company_logo'] ?? null),
+            $this->nullableString($data['description'] ?? null),
+            $this->nullableString($data['candidate_requirements'] ?? null),
+            $this->nullableString($data['benefits'] ?? null),
+            $this->nullableString($data['location'] ?? null),
+            $this->nullableString($data['address_detail'] ?? null),
+            $this->nullablePositiveInt($data['category_id'] ?? null),
+            $this->nullableString($data['thumbnail'] ?? null),
             $data['salary_min'] ?? null,
             $data['salary_max'] ?? null,
             $data['featured'] ?? '0',
-            $data['type'] ?? null,
-            $data['experience'] ?? null,
-            $data['application_deadline'] ?? null,
+            $this->nullableJobType($data['type'] ?? null),
+            $this->nullableString($data['experience'] ?? null),
+            $this->nullableString($data['application_deadline'] ?? null),
             $data['status'] ?? 'active',
             $data['slug'],
             $data['position'] ?? 0,
@@ -253,9 +282,28 @@ class Job {
         ];
         
         foreach ($allowedFields as $field) {
-            if (isset($data[$field])) {
+            if (array_key_exists($field, $data)) {
                 $fields[] = "$field = ?";
-                $params[] = $data[$field];
+                if ($field === 'category_id') {
+                    $params[] = $this->nullablePositiveInt($data[$field]);
+                } elseif ($field === 'type') {
+                    $params[] = $this->nullableJobType($data[$field]);
+                } elseif (in_array($field, [
+                    'company_name',
+                    'company_logo',
+                    'description',
+                    'candidate_requirements',
+                    'benefits',
+                    'location',
+                    'address_detail',
+                    'thumbnail',
+                    'experience',
+                    'application_deadline'
+                ], true)) {
+                    $params[] = $this->nullableString($data[$field]);
+                } else {
+                    $params[] = $data[$field];
+                }
             }
         }
         

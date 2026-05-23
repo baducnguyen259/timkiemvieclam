@@ -66,3 +66,54 @@ run_test('redirect helper keeps only internal same-host targets', function (): v
         }
     }
 });
+
+run_test('file upload validation accepts real jpeg and rejects fake jpeg', function (): void {
+    if (!function_exists('imagecreatetruecolor') || !function_exists('imagejpeg')) {
+        return;
+    }
+
+    $realJpeg = tempnam(sys_get_temp_dir(), 'real-jpeg-');
+    $fakeJpeg = tempnam(sys_get_temp_dir(), 'fake-jpeg-');
+    $renamedPng = tempnam(sys_get_temp_dir(), 'renamed-png-');
+
+    try {
+        $image = imagecreatetruecolor(1, 1);
+        assert_true((bool)$image, 'Should create test image');
+        imagejpeg($image, $realJpeg);
+        if (function_exists('imagepng')) {
+            imagepng($image, $renamedPng);
+        }
+        imagedestroy($image);
+        file_put_contents($fakeJpeg, 'not a jpeg');
+
+        $uploader = new FileUpload(['jpg', 'jpeg', 'png']);
+        $method = new ReflectionMethod(FileUpload::class, 'validateMimeType');
+        $method->setAccessible(true);
+
+        assert_same('jpg', $method->invoke($uploader, $realJpeg, 'jpg'), 'Real JPEG content should validate as jpg');
+        if (function_exists('imagepng')) {
+            assert_same('png', $method->invoke($uploader, $renamedPng, 'jpg'), 'Real PNG content should be detected even when the original extension is wrong');
+        }
+
+        $rejectedFakeJpeg = false;
+        try {
+            $method->invoke($uploader, $fakeJpeg, 'jpg');
+        } catch (ReflectionException $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            $rejectedFakeJpeg = true;
+        }
+
+        assert_true($rejectedFakeJpeg, 'Fake JPEG content should be rejected');
+    } finally {
+        if (is_string($realJpeg) && file_exists($realJpeg)) {
+            unlink($realJpeg);
+        }
+        if (is_string($fakeJpeg) && file_exists($fakeJpeg)) {
+            unlink($fakeJpeg);
+        }
+        if (is_string($renamedPng) && file_exists($renamedPng)) {
+            unlink($renamedPng);
+        }
+    }
+});

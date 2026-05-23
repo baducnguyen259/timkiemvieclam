@@ -6,9 +6,10 @@
  */
 class Pagination {
     /**
-     * Tính trang hiện tại, offset và tổng số trang từ tổng số bản ghi.
+     * Fix #17: Tính trang hiện tại, offset và tổng số trang — bảo vệ chia cho 0.
      */
     public static function calculate($limitItem, $currentPage, $totalItems) {
+        $limitItem = max(1, (int)$limitItem);
         $page = (int)$currentPage;
         if ($page < 1) {
             $page = 1;

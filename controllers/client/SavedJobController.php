@@ -53,9 +53,29 @@ class SavedJobController {
     public function add($jobId) {
         header('Content-Type: application/json');
         $savedJob = $this->getCurrentSavedJob();
+        
         if (!$savedJob) {
-            echo json_encode(['success' => false, 'message' => 'Không tìm thấy session']);
-            exit;
+            try {
+                require_once __DIR__ . '/../../helpers/Generate.php';
+                require_once __DIR__ . '/../../helpers/Security.php';
+                
+                $sessionId = Generate::randomString(32);
+                $currentUserId = isset($GLOBALS['current_user']) ? (int)$GLOBALS['current_user']->id : null;
+                $newSavedJobId = $this->savedJobModel->create($sessionId, $currentUserId);
+                $savedJob = $this->savedJobModel->findById($newSavedJobId);
+                
+                if ($savedJob) {
+                    Security::setCookie('saveJobId', $savedJob->session_id, Security::persistentCookieExpiresAt());
+                    $GLOBALS['current_saved_job'] = $savedJob;
+                    $GLOBALS['miniSavedJobs'] = $savedJob;
+                } else {
+                    throw new Exception('Không thể khởi tạo phiên lưu việc');
+                }
+            } catch (Exception $e) {
+                error_log($e->getMessage());
+                echo json_encode(['success' => false, 'message' => 'Có lỗi xảy ra khi tạo phiên lưu']);
+                exit;
+            }
         }
         
         try {

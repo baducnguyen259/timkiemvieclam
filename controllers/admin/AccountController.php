@@ -10,6 +10,8 @@ require_once __DIR__ . '/../../models/Role.php';
 require_once __DIR__ . '/../../models/Company.php';
 require_once __DIR__ . '/../../helpers/Redirect.php';
 
+require_once __DIR__ . '/../../helpers/Pagination.php';
+
 class AdminAccountController {
     private $accountModel;
     private $userModel;
@@ -27,10 +29,22 @@ class AdminAccountController {
     }
 
     /**
-     * Hiển thị danh sách hợp nhất giữa tài khoản nội bộ và tài khoản ứng viên.
+     * Hiển thị danh sách hợp nhất giữa tài khoản nội bộ và tài khoản ứng viên, có phân trang.
      */
     public function index() {
-        $accountSql = "SELECT
+        // Đếm tổng số bản ghi từ cả 2 bảng để tính phân trang
+        $countSql = "SELECT COUNT(*) AS total FROM (
+            SELECT a.id FROM accounts a WHERE a.deleted = 0
+            UNION ALL
+            SELECT u.id FROM users u WHERE u.deleted = 0
+        ) AS combined";
+        $countRow = Database::fetchOne($countSql);
+        $totalAccounts = $countRow ? (int)$countRow->total : 0;
+
+        $pagination = Pagination::calculate(15, $_GET['page'] ?? 1, $totalAccounts);
+
+        // Lấy trang hiện tại bằng UNION với LIMIT/OFFSET — tránh load toàn bộ vào bộ nhớ PHP
+        $sql = "SELECT
                     a.id,
                     a.full_name,
                     a.email,
@@ -41,9 +55,8 @@ class AdminAccountController {
                 FROM accounts a
                 LEFT JOIN roles r ON a.role_id = r.id
                 WHERE a.deleted = 0
-                ORDER BY a.created_at DESC";
-
-        $userSql = "SELECT
+            UNION ALL
+                SELECT
                     u.id,
                     u.full_name,
                     u.email,
@@ -53,17 +66,12 @@ class AdminAccountController {
                     'user' as entity_type
                 FROM users u
                 WHERE u.deleted = 0
-                ORDER BY u.created_at DESC";
+            ORDER BY created_at DESC, id DESC
+            LIMIT ? OFFSET ?";
 
-        $accounts = array_merge(Database::fetchAll($accountSql), Database::fetchAll($userSql));
+        $accounts = Database::fetchAll($sql, [$pagination['limitItem'], $pagination['skipItem']]);
 
-        usort($accounts, static function($left, $right) {
-            return strtotime($right->created_at ?? '1970-01-01') <=> strtotime($left->created_at ?? '1970-01-01');
-        });
-
-        $totalAccounts = count($accounts);
         $title = 'Quản lý tài khoản';
-
         require_once __DIR__ . '/../../views/admin/account/index.php';
     }
 
@@ -100,9 +108,9 @@ class AdminAccountController {
 
         try {
             $data = [
-                'full_name' => htmlspecialchars(trim($_POST['fullName'] ?? '')),
+                'full_name' => trim($_POST['fullName'] ?? ''),
                 'email' => filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL),
-                'phone' => htmlspecialchars(trim($_POST['phone'] ?? '')),
+                'phone' => trim($_POST['phone'] ?? ''),
                 'role_id' => !empty($_POST['role_id']) ? (int)$_POST['role_id'] : null,
                 'company_id' => !empty($_POST['company_id']) ? (int)$_POST['company_id'] : null,
                 'status' => $_POST['status'] ?? 'active'

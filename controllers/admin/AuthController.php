@@ -77,7 +77,6 @@ class AdminAuthController {
         $rotatedToken = $this->accountModel->rotateToken($account->id);
         session_regenerate_id(true);
         Csrf::rotate();
-        Security::clearCookie('tokenEmployer');
         Security::setCookie('tokenAdmin', $rotatedToken, Security::authCookieExpiresAt());
 
         $_SESSION['flash_success'] = 'Đăng nhập thành công!';
@@ -96,7 +95,6 @@ class AdminAuthController {
         }
 
         Security::clearCookie('tokenAdmin');
-        Security::clearCookie('tokenEmployer');
         session_regenerate_id(true);
         Csrf::rotate();
         $_SESSION['flash_success'] = 'Đăng xuất thành công!';

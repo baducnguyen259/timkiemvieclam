@@ -22,6 +22,16 @@ $formatSalary = static function($salaryMin, $salaryMax) {
 
   return 'Thỏa thuận';
 };
+$queryParams = $_GET;
+unset($queryParams['page']);
+$baseQuery = http_build_query($queryParams);
+// Tạo URL phân trang cho danh sách tin tuyển dụng nhưng giữ lại các bộ lọc hiện tại.
+$buildPageUrl = static function ($page) use ($baseQuery) {
+  if ($baseQuery !== '') {
+    return '?' . $baseQuery . '&page=' . (int)$page;
+  }
+  return '?page=' . (int)$page;
+};
 ?>
 
 <div class="admin-page">
@@ -85,12 +95,12 @@ $formatSalary = static function($salaryMin, $salaryMax) {
         </tr>
       </thead>
       <tbody>
-        <?php foreach ($jobs as $job): ?>
+        <?php foreach ($jobs as $index => $job): ?>
         <tr>
           <td>
             <input type="checkbox" class="checkbox-item" value="<?= $job->id ?>">
           </td>
-          <td><?= (int)($job->position ?? 0) ?></td>
+          <td><?= (int)$pagination['skipItem'] + $index + 1 ?></td>
           <td>
             <a href="<?= BASE_PATH ?>/admin/job/detail/<?= $job->id ?>">
               <?= htmlspecialchars($job->title) ?>
@@ -133,17 +143,17 @@ $formatSalary = static function($salaryMin, $salaryMax) {
   <?php if ($pagination['totalPage'] > 1): ?>
   <div class="pagination">
     <?php if ($pagination['page'] > 1): ?>
-    <a href="?page=<?= $pagination['page'] - 1 ?>" class="btn">« Trước</a>
+    <a href="<?= $buildPageUrl($pagination['page'] - 1) ?>" class="btn">« Trước</a>
     <?php endif; ?>
 
     <?php for ($i = 1; $i <= $pagination['totalPage']; $i++): ?>
-    <a href="?page=<?= $i ?>" class="btn <?= $i === $pagination['page'] ? 'active' : '' ?>">
+    <a href="<?= $buildPageUrl($i) ?>" class="btn <?= $i === $pagination['page'] ? 'active' : '' ?>">
       <?= $i ?>
     </a>
     <?php endfor; ?>
 
     <?php if ($pagination['page'] < $pagination['totalPage']): ?>
-    <a href="?page=<?= $pagination['page'] + 1 ?>" class="btn">Sau »</a>
+    <a href="<?= $buildPageUrl($pagination['page'] + 1) ?>" class="btn">Sau »</a>
     <?php endif; ?>
   </div>
   <?php endif; ?>
